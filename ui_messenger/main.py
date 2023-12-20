@@ -7,12 +7,14 @@ from rclpy.node import Node
 import threading
 import os
 from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import Twist
 from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
 
 class UINode(Node):
 
     def __init__(self):
         super().__init__("ui_messenger_node")
+        self.cmd_vel_pub = self.create_publisher(Twist, "/cmd_vel_nav", 10)
         self.nav = BasicNavigator()
         self.nav.waitUntilNav2Active()
         self.newlocationx:float = 0.0
@@ -24,6 +26,16 @@ class UINode(Node):
         self.neworiw:float = 0.0
         self.succes = False
         self.Exit = False
+
+    def stop_command(self):
+        vel = Twist()
+        vel.linear.x = 0.0
+        vel.linear.y = 0.0
+        vel.linear.z = 0.0
+        vel.angular.x = 0.0
+        vel.angular.y = 0.0
+        vel.angular.z = 0.0
+        self.cmd_vel_pub.publish(vel)
 
     def send_goal_command(self):
         msg = PoseStamped()
@@ -159,6 +171,7 @@ class App(customtkinter.CTk):
 
     def close_callback(self):
         self.ros.cancel_goal()
+        self.ros.stop_command()
         #Oude buttons deleten
         for widget in self.page2.winfo_children():
             widget.destroy()
